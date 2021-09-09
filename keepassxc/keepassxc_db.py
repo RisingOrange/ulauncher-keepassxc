@@ -6,10 +6,11 @@ Features:
     - Search entries
     - Retrieve entry details (username, password, notes, URL)
 """
-from typing import List, Dict, Tuple
-import subprocess
 import os
+import subprocess
 from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Dict, List, Tuple
 
 
 class KeepassxcCliNotFoundError(Exception):
@@ -42,7 +43,7 @@ class KeepassxcDatabase:
     """ Wrapper around keepassxc-cli """
 
     def __init__(self):
-        self.cli = "keepassxc-cli"
+        self.app = next(Path.home().glob('Applications/KeePass*.AppImage'), None)
         self.cli_checked = False
         self.path = None
         self.path_checked = False
@@ -163,9 +164,12 @@ class KeepassxcDatabase:
         """
         Whether we are able to execute the KeePassXC without an OS error
         """
+        if self.app is None:
+            return False
+        
         try:
             subprocess.run(
-                [self.cli], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False
+                [self.app, 'cli'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False
             )
             return True
         except OSError:
@@ -177,7 +181,7 @@ class KeepassxcDatabase:
         """
         try:
             proc = subprocess.run(
-                [self.cli, *args],
+                [self.app, 'cli', *args],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 input=bytes(self.passphrase, "utf-8"),
